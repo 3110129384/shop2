@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新春年货采购系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        header {
+            background-color: #e74c3c;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        
+        .products {
+            flex: 3;
+            padding-right: 20px;
+        }
+        
+        .cart {
+            flex: 1;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+        }
+        
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .product-card {
+            background-color: white;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .product-image {
+            height: 180px;
+            background-color: #f9f9f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .product-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .product-info {
+            padding: 15px;
+        }
+        
+        .product-title {
+            font-size: 16px;
+            margin-bottom: 10px;
+            height: 40px;
+            overflow: hidden;
+        }
+        
+        .product-price {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .product-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .quantity-control {
+            display: flex;
+            align-items: center;
+        }
+        
+        .quantity-btn {
+            width: 25px;
+            height: 25px;
+            background-color: #eee;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .quantity-input {
+            width: 40px;
+            height: 25px;
+            text-align: center;
+            border: 1px solid #ddd;
+            margin: 0 5px;
+        }
+        
+        .add-to-cart {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .add-to-cart:hover {
+            background-color: #c0392b;
+        }
+        
+        .cart-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .cart-items {
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .cart-item-info {
+            flex: 1;
+        }
+        
+        .cart-item-title {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .cart-item-price {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .cart-item-quantity {
+            width: 50px;
+            text-align: center;
+        }
+        
+        .cart-total {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: right;
+        }
+        
+        .checkout-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .checkout-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .empty-cart {
+            text-align: center;
+            color: #888;
+            padding: 20px 0;
+        }
+        
+        .category-filter {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .category-btn {
+            padding: 5px 10px;
+            background-color: #eee;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .category-btn.active {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .search-bar {
+            margin-bottom: 20px;
+            display: flex;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px 0 0 3px;
+        }
+        
+        .search-btn {
+            padding: 8px 15px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 0 3px 3px 0;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .products {
+                padding-right: 0;
+                margin-bottom: 20px;
+            }
+            
+            .cart {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>新春年货采购系统</h1>
+        <p>喜迎新春，欢乐购物</p>
+    </header>
+    
+    <div class="container">
+        <div class="products">
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="搜索年货...">
+                <button class="search-btn">搜索</button>
+            </div>
+            
+            <div class="category-filter">
+                <button class="category-btn active" data-category="all">全部</button>
+                <button class="category-btn" data-category="food">食品</button>
+                <button class="category-btn" data-category="drink">饮品</button>
+                <button class="category-btn" data-category="gift">礼品</button>
+                <button class="category-btn" data-category="decoration">装饰</button>
+            </div>
+            
+            <div class="product-grid" id="productGrid">
+                <!-- 产品将通过JavaScript动态加载 -->
+            </div>
+        </div>
+        
+        <div class="cart">
+            <h2 class="cart-title">购物车</h2>
+            <div class="cart-items" id="cartItems">
+                <div class="empty-cart">购物车是空的</div>
+            </div>
+            <div class="cart-total" id="cartTotal">
+                总计: ¥0.00
+            </div>
+            <button class="checkout-btn" id="checkoutBtn">结算</button>
+        </div>
+    </div>
+    
+    <script>
+        // 商品数据
+        const products = [
+            {
+                id: 1,
+                title: "新春大礼包",
+                price: 128.00,
+                image: "https://via.placeholder.com/200x200?text=新春大礼包",
+                category: "gift"
+            },
+            {
+                id: 2,
+                title: "坚果礼盒",
+                price: 88.00,
+                image: "https://via.placeholder.com/200x200?text=坚果礼盒",
+                category: "food"
+            },
+            {
+                id: 3,
+                title: "红酒礼盒",
+                price: 158.00,
+                image: "https://via.placeholder.com/200x200?text=红酒礼盒",
+                category: "drink"
+            },
+            {
+                id: 4,
+                title: "春节对联",
+                price: 25.00,
+                image: "https://via.placeholder.com/200x200?text=春节对联",
+                category: "decoration"
+            },
+            {
+                id: 5,
+                title: "福字贴纸",
+                price: 15.00,
+                image: "https://via.placeholder.com/200x200?text=福字贴纸",
+                category: "decoration"
+            },
+            {
+                id: 6,
+                title: "糖果礼盒",
+                price: 48.00,
+                image: "https://via.placeholder.com/200x200?text=糖果礼盒",
+                category: "food"
+            },
+            {
+                id: 7,
+                title: "茶叶礼盒",
+                price: 98.00,
+                image: "https://via.placeholder.com/200x200?text=茶叶礼盒",
+                category: "drink"
+            },
+            {
+                id: 8,
+                title: "腊味礼盒",
+                price: 108.00,
+                image: "https://via.placeholder.com/200x200?text=腊味礼盒",
+                category: "food"
+            }
+        ];
+        
+        // 购物车数据
+        let cart = [];
+        
+        // DOM元素
+        const productGrid = document.getElementById('productGrid');
+        const cartItems = document.getElementById('cartItems');
+        const cartTotal = document.getElementById('cartTotal');
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        const categoryBtns = document.querySelectorAll('.category-btn');
+        const searchInput = document.querySelector('.search-input');
+        const searchBtn = document.querySelector('.search-btn');
+        
+        // 初始化页面
+        function init() {
+            renderProducts(products);
+            setupEventListeners();
+            updateCart();
+        }
+        
+        // 渲染产品列表
+        function renderProducts(productsToRender) {
+            productGrid.innerHTML = '';
+            
+            if (productsToRender.length === 0) {
+                productGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;">没有找到相关商品</div>';
+                return;
+            }
+            
+            productsToRender.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                productCard.innerHTML = `
+                    <div class="product-image">
+                        <img src="${product.image}" alt="${product.title}">
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-title">${product.title}</h3>
+                        <div class="product-price">¥${product.price.toFixed(2)}</div>
+                        <div class="product-actions">
+                            <div class="quantity-control">
+                                <button class="quantity-btn minus" data-id="${product.id}">-</button>
+                                <input type="number" class="quantity-input" value="1" min="1" data-id="${product.id}">
+                                <button class="quantity-btn plus" data-id="${product.id}">+</button>
+                            </div>
+                            <button class="add-to-cart" data-id="${product.id}">加入购物车</button>
+                        </div>
+                    </div>
+                `;
+                productGrid.appendChild(productCard);
+            });
+        }
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 分类筛选
+            categoryBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    categoryBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const category = btn.dataset.category;
+                    if (category === 'all') {
+                        renderProducts(products);
+                    } else {
+                        const filteredProducts = products.filter(p => p.category === category);
+                        renderProducts(filteredProducts);
+                    }
+                });
+            });
+            
+            // 搜索
+            searchBtn.addEventListener('click', () => {
+                const keyword = searchInput.value.trim().toLowerCase();
+                if (keyword) {
+                    const filteredProducts = products.filter(p => 
+                        p.title.toLowerCase().includes(keyword)
+                    );
+                    renderProducts(filteredProducts);
+                } else {
+                    renderProducts(products);
+                }
+            });
+            
+            // 产品数量加减
+            productGrid.addEventListener('click', (e) => {
+                if (e.target.classList.contains('quantity-btn')) {
+                    const input = e.target.parentElement.querySelector('.quantity-input');
+                    let value = parseInt(input.value);
+                    
+                    if (e.target.classList.contains('plus')) {
+                        input.value = value + 1;
+                    } else if (e.target.classList.contains('minus') && value > 1) {
+                        input.value = value - 1;
+                    }
+                }
+                
+                // 加入购物车
+                if (e.target.classList.contains('add-to-cart')) {
+                    const productId = parseInt(e.target.dataset.id);
+                    const input = e.target.parentElement.querySelector('.quantity-input');
+                    const quantity = parseInt(input.value);
+                    
+                    addToCart(productId, quantity);
+                }
+            });
+            
+            // 购物车数量修改
+            cartItems.addEventListener('change', (e) => {
+                if (e.target.classList.contains('cart-item-quantity')) {
+                    const productId = parseInt(e.target.dataset.id);
+                    const newQuantity = parseInt(e.target.value);
+                    
+                    if (newQuantity > 0) {
+                        updateCartItem(productId, newQuantity);
+                    } else {
+                        removeFromCart(productId);
+                    }
+                }
+            });
+            
+            // 结算按钮
+            checkoutBtn.addEventListener('click', () => {
+                if (cart.length > 0) {
+                    alert(`结算成功！总金额: ¥${calculateTotal().toFixed(2)}\n感谢您的购买，祝您新春快乐！`);
+                    cart = [];
+                    updateCart();
+                } else {
+                    alert('购物车是空的，请先添加商品');
+                }
+            });
+        }
+        
+        // 添加到购物车
+        function addToCart(productId, quantity) {
+            const product = products.find(p => p.id === productId);
+            
+            if (!product) return;
+            
+            const existingItem = cart.find(item => item.id === productId);
+            
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                cart.push({
+                    id: productId,
+                    title: product.title,
+                    price: product.price,
+                    quantity: quantity
+                });
+            }
+            
+            updateCart();
+            alert(`已添加 ${product.title} x${quantity} 到购物车`);
+        }
+        
+        // 更新购物车商品数量
+        function updateCartItem(productId, newQuantity) {
+            const item = cart.find(item => item.id === productId);
+            
+            if (item) {
+                item.quantity = newQuantity;
+                updateCart();
+            }
+        }
+        
+        // 从购物车移除商品
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCart();
+        }
+        
+        // 更新购物车显示
+        function updateCart() {
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<div class="empty-cart">购物车是空的</div>';
+                cartTotal.textContent = '总计: ¥0.00';
+                return;
+            }
+            
+            cartItems.innerHTML = '';
+            
+            cart.forEach(item => {
+                const cartItem = document.createElement('div');
+                cartItem.className = 'cart-item';
+                cartItem.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.title}</div>
+                        <div class="cart-item-price">¥${item.price.toFixed(2)}</div>
+                    </div>
+                    <input type="number" class="cart-item-quantity" value="${item.quantity}" min="1" data-id="${item.id}">
+                `;
+                cartItems.appendChild(cartItem);
+            });
+            
+            cartTotal.textContent = `总计: ¥${calculateTotal().toFixed(2)}`;
+        }
+        
+        // 计算总价
+        function calculateTotal() {
+            return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        }
+        
+        // 初始化页面
+        init();
+    </script>
+</body>
+</html>
