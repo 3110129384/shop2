@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新春年货采购系统</title>
+    <title>新春年货采购系统 - 懒加载优化</title>
     <style>
         * {
             margin: 0;
@@ -73,12 +73,36 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            position: relative;
         }
         
         .product-image img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            transition: opacity 0.3s;
+        }
+        
+        .product-image img.lazy-loading {
+            opacity: 0;
+        }
+        
+        .product-image img.lazy-loaded {
+            opacity: 1;
+        }
+        
+        .image-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f9f9f9;
+            color: #999;
+            font-size: 14px;
         }
         
         .product-info {
@@ -265,6 +289,12 @@
                 position: static;
             }
         }
+        
+        .loading-indicator {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -306,279 +336,352 @@
     </div>
     
     <script>
-    // 商品数据（使用 FastGit 新域名 hub.fastgit.org）
+    // 商品数据（使用 jsDelivr CDN）
     const products = [
-    {
-        id: 1,
-        title: "新春大礼包",
-        price: 128.00,
-        image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/libao.png",
-        category: "gift"
-    },
-    {
-        id: 2,
-        title: "坚果礼盒",
-        price: 88.00,
-        image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/nut.png",
-        category: "food"
-    },
-    {
-        id: 3,
-        title: "红酒礼盒",
-        price: 158.00,
-        image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/drink.png",
-        category: "drink"
-    },
-    {
-        id: 4,
-        title: "春节对联",
-        price: 25.00,
-        image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/duilian.png",
-        category: "decoration"
-    },
-    {
-        id: 5,
-        title: "福字贴纸",
-        price: 15.00,
-        image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/fu.png",
-        category: "decoration"
-    },
-    {
-        id: 6,
-        title: "糖果礼盒",
-        price: 48.00,
-        image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/candy.png",
-        category: "food"
-    },
-    {
-        id: 7,
-        title: "茶叶礼盒",
-        price: 98.00,
-        image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/tea.png",
-        category: "drink"
-    },
-    {
-        id: 8,
-        title: "腊味礼盒",
-        price: 108.00,
-        image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/lawei.png",
-        category: "food"
+        {
+            id: 1,
+            title: "新春大礼包",
+            price: 128.00,
+            image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/libao.png",
+            category: "gift"
+        },
+        {
+            id: 2,
+            title: "坚果礼盒",
+            price: 88.00,
+            image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/nut.png",
+            category: "food"
+        },
+        {
+            id: 3,
+            title: "红酒礼盒",
+            price: 158.00,
+            image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/drink.png",
+            category: "drink"
+        },
+        {
+            id: 4,
+            title: "春节对联",
+            price: 25.00,
+            image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/duilian.png",
+            category: "decoration"
+        },
+        {
+            id: 5,
+            title: "福字贴纸",
+            price: 15.00,
+            image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/fu.png",
+            category: "decoration"
+        },
+        {
+            id: 6,
+            title: "糖果礼盒",
+            price: 48.00,
+            image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/candy.png",
+            category: "food"
+        },
+        {
+            id: 7,
+            title: "茶叶礼盒",
+            price: 98.00,
+            image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/tea.png",
+            category: "drink"
+        },
+        {
+            id: 8,
+            title: "腊味礼盒",
+            price: 108.00,
+            image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/lawei.png",
+            category: "food"
+        }
+    ];
+        
+    // 购物车数据
+    let cart = [];
+    
+    // DOM元素
+    const productGrid = document.getElementById('productGrid');
+    const cartItems = document.getElementById('cartItems');
+    const cartTotal = document.getElementById('cartTotal');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const categoryBtns = document.querySelectorAll('.category-btn');
+    const searchInput = document.querySelector('.search-input');
+    const searchBtn = document.querySelector('.search-btn');
+    
+    // 懒加载观察器
+    let lazyImageObserver;
+    
+    // 初始化页面
+    function init() {
+        renderProducts(products);
+        setupEventListeners();
+        updateCart();
+        initLazyLoading();
     }
-];
-
+    
+    // 渲染产品列表（带懒加载）
+    function renderProducts(productsToRender) {
+        productGrid.innerHTML = '';
         
-        // 购物车数据
-        let cart = [];
-        
-        // DOM元素
-        const productGrid = document.getElementById('productGrid');
-        const cartItems = document.getElementById('cartItems');
-        const cartTotal = document.getElementById('cartTotal');
-        const checkoutBtn = document.getElementById('checkoutBtn');
-        const categoryBtns = document.querySelectorAll('.category-btn');
-        const searchInput = document.querySelector('.search-input');
-        const searchBtn = document.querySelector('.search-btn');
-        
-        // 初始化页面
-        function init() {
-            renderProducts(products);
-            setupEventListeners();
-            updateCart();
+        if (productsToRender.length === 0) {
+            productGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;">没有找到相关商品</div>';
+            return;
         }
         
-        // 渲染产品列表
-        function renderProducts(productsToRender) {
-            productGrid.innerHTML = '';
-            
-            if (productsToRender.length === 0) {
-                productGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;">没有找到相关商品</div>';
-                return;
-            }
-            
-            productsToRender.forEach(product => {
-                const productCard = document.createElement('div');
-                productCard.className = 'product-card';
-                productCard.innerHTML = `
-                    <div class="product-image">
-                        <img src="${product.image}" alt="${product.title}">
-                    </div>
-                    <div class="product-info">
-                        <h3 class="product-title">${product.title}</h3>
-                        <div class="product-price">¥${product.price.toFixed(2)}</div>
-                        <div class="product-actions">
-                            <div class="quantity-control">
-                                <button class="quantity-btn minus" data-id="${product.id}">-</button>
-                                <input type="number" class="quantity-input" value="1" min="1" data-id="${product.id}">
-                                <button class="quantity-btn plus" data-id="${product.id}">+</button>
-                            </div>
-                            <button class="add-to-cart" data-id="${product.id}">加入购物车</button>
+        productsToRender.forEach(product => {
+            const productCard = document.createElement('div');
+            productCard.className = 'product-card';
+            productCard.innerHTML = `
+                <div class="product-image">
+                    <!-- 使用 data-src 代替 src 实现懒加载 -->
+                    <img data-src="${product.image}" alt="${product.title}" class="lazy-loading">
+                    <div class="image-placeholder">加载中...</div>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">${product.title}</h3>
+                    <div class="product-price">¥${product.price.toFixed(2)}</div>
+                    <div class="product-actions">
+                        <div class="quantity-control">
+                            <button class="quantity-btn minus" data-id="${product.id}">-</button>
+                            <input type="number" class="quantity-input" value="1" min="1" data-id="${product.id}">
+                            <button class="quantity-btn plus" data-id="${product.id}">+</button>
                         </div>
+                        <button class="add-to-cart" data-id="${product.id}">加入购物车</button>
                     </div>
-                `;
-                productGrid.appendChild(productCard);
-            });
-        }
+                </div>
+            `;
+            productGrid.appendChild(productCard);
+        });
         
-        // 设置事件监听器
-        function setupEventListeners() {
-            // 分类筛选
-            categoryBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    categoryBtns.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    
-                    const category = btn.dataset.category;
-                    if (category === 'all') {
-                        renderProducts(products);
-                    } else {
-                        const filteredProducts = products.filter(p => p.category === category);
-                        renderProducts(filteredProducts);
+        // 初始化懒加载
+        initLazyLoading();
+    }
+    
+    // 初始化懒加载
+    function initLazyLoading() {
+        const lazyImages = document.querySelectorAll('img[data-src]');
+        
+        // 如果浏览器支持 IntersectionObserver
+        if ('IntersectionObserver' in window) {
+            // 如果观察器已存在，先断开之前的连接
+            if (lazyImageObserver) {
+                lazyImageObserver.disconnect();
+            }
+            
+            lazyImageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const lazyImage = entry.target;
+                        loadImage(lazyImage);
+                        lazyImageObserver.unobserve(lazyImage);
                     }
                 });
             });
-            
-            // 搜索
-            searchBtn.addEventListener('click', () => {
-                const keyword = searchInput.value.trim().toLowerCase();
-                if (keyword) {
-                    const filteredProducts = products.filter(p => 
-                        p.title.toLowerCase().includes(keyword)
-                    );
-                    renderProducts(filteredProducts);
-                } else {
-                    renderProducts(products);
-                }
+
+            lazyImages.forEach(lazyImage => {
+                lazyImageObserver.observe(lazyImage);
             });
+        } else {
+            // 不支持 IntersectionObserver 的备选方案 - 直接加载所有图片
+            lazyImages.forEach(loadImage);
+        }
+    }
+    
+    // 加载图片函数
+    function loadImage(img) {
+        const src = img.getAttribute('data-src');
+        if (!src) return;
+        
+        // 显示加载状态
+        const placeholder = img.nextElementSibling;
+        if (placeholder && placeholder.classList.contains('image-placeholder')) {
+            placeholder.textContent = '加载中...';
+        }
+        
+        // 创建新的Image对象预加载
+        const tempImage = new Image();
+        tempImage.src = src;
+        
+        tempImage.onload = () => {
+            // 图片加载完成后，设置到实际图片元素
+            img.src = src;
+            img.classList.remove('lazy-loading');
+            img.classList.add('lazy-loaded');
             
-            // 产品数量加减
-            productGrid.addEventListener('click', (e) => {
-                if (e.target.classList.contains('quantity-btn')) {
-                    const input = e.target.parentElement.querySelector('.quantity-input');
-                    let value = parseInt(input.value);
-                    
-                    if (e.target.classList.contains('plus')) {
-                        input.value = value + 1;
-                    } else if (e.target.classList.contains('minus') && value > 1) {
-                        input.value = value - 1;
-                    }
-                }
+            // 隐藏占位符
+            if (placeholder && placeholder.classList.contains('image-placeholder')) {
+                placeholder.style.display = 'none';
+            }
+        };
+        
+        tempImage.onerror = () => {
+            // 加载失败时显示错误状态
+            if (placeholder && placeholder.classList.contains('image-placeholder')) {
+                placeholder.textContent = '加载失败';
+                placeholder.style.color = '#e74c3c';
+            }
+        };
+    }
+    
+    // 设置事件监听器
+    function setupEventListeners() {
+        // 分类筛选
+        categoryBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                categoryBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
                 
-                // 加入购物车
-                if (e.target.classList.contains('add-to-cart')) {
-                    const productId = parseInt(e.target.dataset.id);
-                    const input = e.target.parentElement.querySelector('.quantity-input');
-                    const quantity = parseInt(input.value);
-                    
-                    addToCart(productId, quantity);
-                }
-            });
-            
-            // 购物车数量修改
-            cartItems.addEventListener('change', (e) => {
-                if (e.target.classList.contains('cart-item-quantity')) {
-                    const productId = parseInt(e.target.dataset.id);
-                    const newQuantity = parseInt(e.target.value);
-                    
-                    if (newQuantity > 0) {
-                        updateCartItem(productId, newQuantity);
-                    } else {
-                        removeFromCart(productId);
-                    }
-                }
-            });
-            
-            // 结算按钮
-            checkoutBtn.addEventListener('click', () => {
-                if (cart.length > 0) {
-                    alert(`结算成功！总金额: ¥${calculateTotal().toFixed(2)}\n感谢您的购买，祝您新春快乐！`);
-                    cart = [];
-                    updateCart();
+                const category = btn.dataset.category;
+                if (category === 'all') {
+                    renderProducts(products);
                 } else {
-                    alert('购物车是空的，请先添加商品');
+                    const filteredProducts = products.filter(p => p.category === category);
+                    renderProducts(filteredProducts);
                 }
             });
-        }
+        });
         
-        // 添加到购物车
-        function addToCart(productId, quantity) {
-            const product = products.find(p => p.id === productId);
-            
-            if (!product) return;
-            
-            const existingItem = cart.find(item => item.id === productId);
-            
-            if (existingItem) {
-                existingItem.quantity += quantity;
+        // 搜索
+        searchBtn.addEventListener('click', () => {
+            const keyword = searchInput.value.trim().toLowerCase();
+            if (keyword) {
+                const filteredProducts = products.filter(p => 
+                    p.title.toLowerCase().includes(keyword)
+                );
+                renderProducts(filteredProducts);
             } else {
-                cart.push({
-                    id: productId,
-                    title: product.title,
-                    price: product.price,
-                    quantity: quantity
-                });
+                renderProducts(products);
+            }
+        });
+        
+        // 回车键搜索
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchBtn.click();
+            }
+        });
+        
+        // 产品数量加减
+        productGrid.addEventListener('click', (e) => {
+            if (e.target.classList.contains('quantity-btn')) {
+                const input = e.target.parentElement.querySelector('.quantity-input');
+                let value = parseInt(input.value);
+                
+                if (e.target.classList.contains('plus')) {
+                    input.value = value + 1;
+                } else if (e.target.classList.contains('minus') && value > 1) {
+                    input.value = value - 1;
+                }
             }
             
-            updateCart();
-            alert(`已添加 ${product.title} x${quantity} 到购物车`);
-        }
+            // 加入购物车
+            if (e.target.classList.contains('add-to-cart')) {
+                const productId = parseInt(e.target.dataset.id);
+                const input = e.target.parentElement.querySelector('.quantity-input');
+                const quantity = parseInt(input.value);
+                
+                addToCart(productId, quantity);
+            }
+        });
         
-        // 更新购物车商品数量
-        function updateCartItem(productId, newQuantity) {
-            const item = cart.find(item => item.id === productId);
-            
-            if (item) {
-                item.quantity = newQuantity;
+        // 购物车数量修改
+        cartItems.addEventListener('change', (e) => {
+            if (e.target.classList.contains('cart-item-quantity')) {
+                const productId = parseInt(e.target.dataset.id);
+                const newQuantity = parseInt(e.target.value);
+                
+                if (newQuantity > 0) {
+                    updateCartItem(productId, newQuantity);
+                } else {
+                    removeFromCart(productId);
+                }
+            }
+        });
+        
+        // 结算按钮
+        checkoutBtn.addEventListener('click', () => {
+            if (cart.length > 0) {
+                alert(`结算成功！总金额: ¥${calculateTotal().toFixed(2)}\n感谢您的购买，祝您新春快乐！`);
+                cart = [];
                 updateCart();
+            } else {
+                alert('购物车是空的，请先添加商品');
             }
+        });
+    }
+    
+    // 添加到购物车
+    function addToCart(productId, quantity) {
+        const product = products.find(p => p.id === productId);
+        
+        if (!product) return;
+        
+        const existingItem = cart.find(item => item.id === productId);
+        
+        if (existingItem) {
+            existingItem.quantity += quantity;
+        } else {
+            cart.push({
+                id: productId,
+                title: product.title,
+                price: product.price,
+                quantity: quantity
+            });
         }
         
-        // 从购物车移除商品
-        function removeFromCart(productId) {
-            cart = cart.filter(item => item.id !== productId);
+        updateCart();
+        alert(`已添加 ${product.title} x${quantity} 到购物车`);
+    }
+    
+    // 更新购物车商品数量
+    function updateCartItem(productId, newQuantity) {
+        const item = cart.find(item => item.id === productId);
+        
+        if (item) {
+            item.quantity = newQuantity;
             updateCart();
         }
-        
-        // 更新购物车显示
-        function updateCart() {
-            if (cart.length === 0) {
-                cartItems.innerHTML = '<div class="empty-cart">购物车是空的</div>';
-                cartTotal.textContent = '总计: ¥0.00';
-                return;
-            }
-            
-            cartItems.innerHTML = '';
-            
-            cart.forEach(item => {
-                const cartItem = document.createElement('div');
-                cartItem.className = 'cart-item';
-                cartItem.innerHTML = `
-                    <div class="cart-item-info">
-                        <div class="cart-item-title">${item.title}</div>
-                        <div class="cart-item-price">¥${item.price.toFixed(2)}</div>
-                    </div>
-                    <input type="number" class="cart-item-quantity" value="${item.quantity}" min="1" data-id="${item.id}">
-                `;
-                cartItems.appendChild(cartItem);
-            });
-            
-            cartTotal.textContent = `总计: ¥${calculateTotal().toFixed(2)}`;
+    }
+    
+    // 从购物车移除商品
+    function removeFromCart(productId) {
+        cart = cart.filter(item => item.id !== productId);
+        updateCart();
+    }
+    
+    // 更新购物车显示
+    function updateCart() {
+        if (cart.length === 0) {
+            cartItems.innerHTML = '<div class="empty-cart">购物车是空的</div>';
+            cartTotal.textContent = '总计: ¥0.00';
+            return;
         }
         
-        // 计算总价
-        function calculateTotal() {
-            return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-        }
+        cartItems.innerHTML = '';
         
-        // 初始化页面
-        init();
+        cart.forEach(item => {
+            const cartItem = document.createElement('div');
+            cartItem.className = 'cart-item';
+            cartItem.innerHTML = `
+                <div class="cart-item-info">
+                    <div class="cart-item-title">${item.title}</div>
+                    <div class="cart-item-price">¥${item.price.toFixed(2)}</div>
+                </div>
+                <input type="number" class="cart-item-quantity" value="${item.quantity}" min="1" data-id="${item.id}">
+            `;
+            cartItems.appendChild(cartItem);
+        });
+        
+        cartTotal.textContent = `总计: ¥${calculateTotal().toFixed(2)}`;
+    }
+    
+    // 计算总价
+    function calculateTotal() {
+        return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    }
+    
+    // 初始化页面
+    init();
     </script>
 </body>
-
 </html>
-
-
-
-
-
-
-
