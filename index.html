@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新春年货采购系统 - 懒加载优化</title>
+    <title>新春年货采购系统 - 图片加载优化</title>
     <style>
         * {
             margin: 0;
@@ -103,6 +103,22 @@
             background-color: #f9f9f9;
             color: #999;
             font-size: 14px;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .retry-btn {
+            padding: 4px 12px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .retry-btn:hover {
+            background-color: #c0392b;
         }
         
         .product-info {
@@ -336,13 +352,17 @@
     </div>
     
     <script>
-    // 商品数据（使用 jsDelivr CDN）
+    // 商品数据 - 使用多种CDN源作为备选
     const products = [
         {
             id: 1,
             title: "新春大礼包",
             price: 128.00,
             image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/libao.png",
+            fallbackImages: [
+                "https://raw.githubusercontent.com/3110129384/shop2/main/images/libao.png",
+                "https://ghproxy.com/https://raw.githubusercontent.com/3110129384/shop2/main/images/libao.png"
+            ],
             category: "gift"
         },
         {
@@ -350,6 +370,10 @@
             title: "坚果礼盒",
             price: 88.00,
             image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/nut.png",
+            fallbackImages: [
+                "https://raw.githubusercontent.com/3110129384/shop2/main/images/nut.png",
+                "https://ghproxy.com/https://raw.githubusercontent.com/3110129384/shop2/main/images/nut.png"
+            ],
             category: "food"
         },
         {
@@ -357,6 +381,10 @@
             title: "红酒礼盒",
             price: 158.00,
             image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/drink.png",
+            fallbackImages: [
+                "https://raw.githubusercontent.com/3110129384/shop2/main/images/drink.png",
+                "https://ghproxy.com/https://raw.githubusercontent.com/3110129384/shop2/main/images/drink.png"
+            ],
             category: "drink"
         },
         {
@@ -364,6 +392,10 @@
             title: "春节对联",
             price: 25.00,
             image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/duilian.png",
+            fallbackImages: [
+                "https://raw.githubusercontent.com/3110129384/shop2/main/images/duilian.png",
+                "https://ghproxy.com/https://raw.githubusercontent.com/3110129384/shop2/main/images/duilian.png"
+            ],
             category: "decoration"
         },
         {
@@ -371,6 +403,10 @@
             title: "福字贴纸",
             price: 15.00,
             image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/fu.png",
+            fallbackImages: [
+                "https://raw.githubusercontent.com/3110129384/shop2/main/images/fu.png",
+                "https://ghproxy.com/https://raw.githubusercontent.com/3110129384/shop2/main/images/fu.png"
+            ],
             category: "decoration"
         },
         {
@@ -378,6 +414,10 @@
             title: "糖果礼盒",
             price: 48.00,
             image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/candy.png",
+            fallbackImages: [
+                "https://raw.githubusercontent.com/3110129384/shop2/main/images/candy.png",
+                "https://ghproxy.com/https://raw.githubusercontent.com/3110129384/shop2/main/images/candy.png"
+            ],
             category: "food"
         },
         {
@@ -385,6 +425,10 @@
             title: "茶叶礼盒",
             price: 98.00,
             image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/tea.png",
+            fallbackImages: [
+                "https://raw.githubusercontent.com/3110129384/shop2/main/images/tea.png",
+                "https://ghproxy.com/https://raw.githubusercontent.com/3110129384/shop2/main/images/tea.png"
+            ],
             category: "drink"
         },
         {
@@ -392,6 +436,10 @@
             title: "腊味礼盒",
             price: 108.00,
             image: "https://cdn.jsdelivr.net/gh/3110129384/shop2/images/lawei.png",
+            fallbackImages: [
+                "https://raw.githubusercontent.com/3110129384/shop2/main/images/lawei.png",
+                "https://ghproxy.com/https://raw.githubusercontent.com/3110129384/shop2/main/images/lawei.png"
+            ],
             category: "food"
         }
     ];
@@ -434,8 +482,15 @@
             productCard.innerHTML = `
                 <div class="product-image">
                     <!-- 使用 data-src 代替 src 实现懒加载 -->
-                    <img data-src="${product.image}" alt="${product.title}" class="lazy-loading">
-                    <div class="image-placeholder">加载中...</div>
+                    <img data-src="${product.image}" 
+                         data-fallbacks="${JSON.stringify(product.fallbackImages || [])}"
+                         data-product-id="${product.id}"
+                         alt="${product.title}" 
+                         class="lazy-loading">
+                    <div class="image-placeholder">
+                        <span>加载中...</span>
+                        <button class="retry-btn" style="display:none;">重试</button>
+                    </div>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
@@ -472,7 +527,7 @@
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         const lazyImage = entry.target;
-                        loadImage(lazyImage);
+                        loadImageWithFallback(lazyImage);
                         lazyImageObserver.unobserve(lazyImage);
                     }
                 });
@@ -483,28 +538,44 @@
             });
         } else {
             // 不支持 IntersectionObserver 的备选方案 - 直接加载所有图片
-            lazyImages.forEach(loadImage);
+            lazyImages.forEach(img => loadImageWithFallback(img));
         }
     }
     
-    // 加载图片函数
-    function loadImage(img) {
+    // 带备选方案的图片加载函数
+    function loadImageWithFallback(img, currentIndex = 0) {
         const src = img.getAttribute('data-src');
+        const fallbacks = JSON.parse(img.getAttribute('data-fallbacks') || '[]');
+        const productId = img.getAttribute('data-product-id');
+        
         if (!src) return;
         
         // 显示加载状态
         const placeholder = img.nextElementSibling;
+        const retryBtn = placeholder.querySelector('.retry-btn');
+        
         if (placeholder && placeholder.classList.contains('image-placeholder')) {
-            placeholder.textContent = '加载中...';
+            placeholder.querySelector('span').textContent = '加载中...';
+            retryBtn.style.display = 'none';
+        }
+        
+        // 根据当前索引选择图片源
+        const imageSources = [src, ...fallbacks];
+        const currentSrc = imageSources[currentIndex];
+        
+        if (!currentSrc) {
+            // 所有源都失败了
+            showImageError(img, '图片加载失败');
+            return;
         }
         
         // 创建新的Image对象预加载
         const tempImage = new Image();
-        tempImage.src = src;
+        tempImage.src = currentSrc;
         
         tempImage.onload = () => {
             // 图片加载完成后，设置到实际图片元素
-            img.src = src;
+            img.src = currentSrc;
             img.classList.remove('lazy-loading');
             img.classList.add('lazy-loaded');
             
@@ -512,15 +583,61 @@
             if (placeholder && placeholder.classList.contains('image-placeholder')) {
                 placeholder.style.display = 'none';
             }
+            
+            console.log(`图片加载成功: ${currentSrc}`);
         };
         
         tempImage.onerror = () => {
-            // 加载失败时显示错误状态
-            if (placeholder && placeholder.classList.contains('image-placeholder')) {
-                placeholder.textContent = '加载失败';
-                placeholder.style.color = '#e74c3c';
+            console.warn(`图片加载失败 (${currentSrc}), 尝试备选方案 ${currentIndex + 1}/${imageSources.length}`);
+            
+            // 尝试下一个备选方案
+            if (currentIndex < imageSources.length - 1) {
+                setTimeout(() => {
+                    loadImageWithFallback(img, currentIndex + 1);
+                }, 500); // 延迟500ms后重试
+            } else {
+                // 所有备选方案都失败了
+                showImageError(img, '图片加载失败');
+                
+                // 显示重试按钮
+                if (retryBtn) {
+                    retryBtn.style.display = 'block';
+                    retryBtn.onclick = () => {
+                        loadImageWithFallback(img, 0); // 从第一个源重新开始
+                    };
+                }
             }
         };
+        
+        // 设置超时处理
+        setTimeout(() => {
+            if (!tempImage.complete) {
+                console.warn(`图片加载超时: ${currentSrc}`);
+                tempImage.onerror = null; // 防止重复处理
+                if (currentIndex < imageSources.length - 1) {
+                    loadImageWithFallback(img, currentIndex + 1);
+                } else {
+                    showImageError(img, '加载超时');
+                }
+            }
+        }, 10000); // 10秒超时
+    }
+    
+    // 显示图片错误状态
+    function showImageError(img, message) {
+        const placeholder = img.nextElementSibling;
+        if (placeholder && placeholder.classList.contains('image-placeholder')) {
+            placeholder.querySelector('span').textContent = message;
+            placeholder.querySelector('span').style.color = '#e74c3c';
+            
+            const retryBtn = placeholder.querySelector('.retry-btn');
+            if (retryBtn) {
+                retryBtn.style.display = 'block';
+                retryBtn.onclick = () => {
+                    loadImageWithFallback(img, 0);
+                };
+            }
+        }
     }
     
     // 设置事件监听器
